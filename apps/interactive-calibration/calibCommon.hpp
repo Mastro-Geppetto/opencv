@@ -1,8 +1,13 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
+
 #ifndef CALIB_COMMON_HPP
 #define CALIB_COMMON_HPP
 
-#include <memory>
 #include <opencv2/core.hpp>
+
+#include <memory>
 #include <vector>
 #include <string>
 
@@ -75,7 +80,7 @@ namespace calib
         cv::Size boardSize;
         int charucoDictName;
         int calibrationStep;
-        float charucoSquareLenght, charucoMarkerSize;
+        float charucoSquareLength, charucoMarkerSize;
         float captureDelay;
         float squareSize;
         float templDst;

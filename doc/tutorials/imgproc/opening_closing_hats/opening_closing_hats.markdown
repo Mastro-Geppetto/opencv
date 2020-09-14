@@ -1,6 +1,9 @@
 More Morphology Transformations {#tutorial_opening_closing_hats}
 ===============================
 
+@prev_tutorial{tutorial_erosion_dilatation}
+@next_tutorial{tutorial_hitOrMiss}
+
 Goal
 ----
 
@@ -24,7 +27,7 @@ In the previous tutorial we covered two basic Morphology operations:
 -   Dilation.
 
 Based on these two we can effectuate more sophisticated transformations to our images. Here we
-discuss briefly 05 operations offered by OpenCV:
+discuss briefly 5 operations offered by OpenCV:
 
 ### Opening
 
@@ -36,7 +39,7 @@ discuss briefly 05 operations offered by OpenCV:
     foreground)
 -   For instance, check out the example below. The image at the left is the original and the image
     at the right is the result after applying the opening transformation. We can observe that the
-    small spaces in the corners of the letter tend to dissapear.
+    small dots have disappeared.
 
     ![](images/Morphology_2_Tutorial_Theory_Opening.png)
 
@@ -79,14 +82,28 @@ discuss briefly 05 operations offered by OpenCV:
 Code
 ----
 
-This tutorial code's is shown lines below. You can also download it from
+@add_toggle_cpp
+This tutorial's code is shown below. You can also download it
 [here](https://github.com/opencv/opencv/tree/master/samples/cpp/tutorial_code/ImgProc/Morphology_2.cpp)
 @include cpp/tutorial_code/ImgProc/Morphology_2.cpp
+@end_toggle
+
+@add_toggle_java
+This tutorial's code is shown below. You can also download it
+[here](https://github.com/opencv/opencv/tree/master/samples/java/tutorial_code/ImgProc/opening_closing_hats/MorphologyDemo2.java)
+@include java/tutorial_code/ImgProc/opening_closing_hats/MorphologyDemo2.java
+@end_toggle
+
+@add_toggle_python
+This tutorial's code is shown below. You can also download it
+[here](https://github.com/opencv/opencv/tree/master/samples/python/tutorial_code/imgProc/opening_closing_hats/morphology_2.py)
+@include python/tutorial_code/imgProc/opening_closing_hats/morphology_2.py
+@end_toggle
 
 Explanation
 -----------
 
--#  Let's check the general structure of the program:
+-#  Let's check the general structure of the C++ program:
     -   Load an image
     -   Create a window to display results of the Morphological operations
     -   Create three Trackbars for the user to enter parameters:
@@ -130,8 +147,8 @@ Explanation
 Results
 -------
 
--   After compiling the code above we can execute it giving an image path as an argument. For this
-    tutorial we use as input the image: **baboon.png**:
+-   After compiling the code above we can execute it giving an image path as an argument. Results using
+    the image: **baboon.png**:
 
     ![](images/Morphology_2_Tutorial_Original_Image.jpg)
 

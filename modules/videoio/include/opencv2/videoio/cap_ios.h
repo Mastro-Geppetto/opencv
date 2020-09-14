@@ -39,29 +39,11 @@
 
 @class CvAbstractCamera;
 
-@interface CvAbstractCamera : NSObject
+CV_EXPORTS @interface CvAbstractCamera : NSObject
 {
-    AVCaptureSession* captureSession;
-    AVCaptureConnection* videoCaptureConnection;
-    AVCaptureVideoPreviewLayer *captureVideoPreviewLayer;
-
     UIDeviceOrientation currentDeviceOrientation;
 
     BOOL cameraAvailable;
-    BOOL captureSessionLoaded;
-    BOOL running;
-    BOOL useAVCaptureVideoPreviewLayer;
-
-    AVCaptureDevicePosition defaultAVCaptureDevicePosition;
-    AVCaptureVideoOrientation defaultAVCaptureVideoOrientation;
-    NSString *const defaultAVCaptureSessionPreset;
-
-    int defaultFPS;
-
-    UIView* parentView;
-
-    int imageWidth;
-    int imageHeight;
 }
 
 @property (nonatomic, strong) AVCaptureSession* captureSession;
@@ -82,22 +64,22 @@
 
 @property (nonatomic, strong) UIView* parentView;
 
-- (void)start;
-- (void)stop;
-- (void)switchCameras;
+- CV_UNUSED(start);
+- CV_UNUSED(stop);
+- CV_UNUSED(switchCameras);
 
 - (id)initWithParentView:(UIView*)parent;
 
-- (void)createCaptureOutput;
-- (void)createVideoPreviewLayer;
-- (void)updateOrientation;
+- CV_UNUSED(createCaptureOutput);
+- CV_UNUSED(createVideoPreviewLayer);
+- CV_UNUSED(updateOrientation);
 
-- (void)lockFocus;
-- (void)unlockFocus;
-- (void)lockExposure;
-- (void)unlockExposure;
-- (void)lockBalance;
-- (void)unlockBalance;
+- CV_UNUSED(lockFocus);
+- CV_UNUSED(unlockFocus);
+- CV_UNUSED(lockExposure);
+- CV_UNUSED(unlockExposure);
+- CV_UNUSED(lockBalance);
+- CV_UNUSED(unlockBalance);
 
 @end
 
@@ -105,7 +87,7 @@
 
 @class CvVideoCamera;
 
-@protocol CvVideoCameraDelegate <NSObject>
+CV_EXPORTS @protocol CvVideoCameraDelegate <NSObject>
 
 #ifdef __cplusplus
 // delegate method for processing image frames
@@ -114,26 +96,18 @@
 
 @end
 
-@interface CvVideoCamera : CvAbstractCamera<AVCaptureVideoDataOutputSampleBufferDelegate>
+CV_EXPORTS @interface CvVideoCamera : CvAbstractCamera<AVCaptureVideoDataOutputSampleBufferDelegate>
 {
     AVCaptureVideoDataOutput *videoDataOutput;
 
     dispatch_queue_t videoDataOutputQueue;
     CALayer *customPreviewLayer;
 
-    BOOL grayscaleMode;
-
-    BOOL recordVideo;
-    BOOL rotateVideo;
-    AVAssetWriterInput* recordAssetWriterInput;
-    AVAssetWriterInputPixelBufferAdaptor* recordPixelBufferAdaptor;
-    AVAssetWriter* recordAssetWriter;
-
     CMTime lastSampleTime;
 
 }
 
-@property (nonatomic, assign) id<CvVideoCameraDelegate> delegate;
+@property (nonatomic, weak) id<CvVideoCameraDelegate> delegate;
 @property (nonatomic, assign) BOOL grayscaleMode;
 
 @property (nonatomic, assign) BOOL recordVideo;
@@ -143,8 +117,8 @@
 @property (nonatomic, strong) AVAssetWriter* recordAssetWriter;
 
 - (void)adjustLayoutToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation;
-- (void)layoutPreviewLayer;
-- (void)saveVideo;
+- CV_UNUSED(layoutPreviewLayer);
+- CV_UNUSED(saveVideo);
 - (NSURL *)videoFileURL;
 - (NSString *)videoFileString;
 
@@ -155,21 +129,21 @@
 
 @class CvPhotoCamera;
 
-@protocol CvPhotoCameraDelegate <NSObject>
+CV_EXPORTS @protocol CvPhotoCameraDelegate <NSObject>
 
 - (void)photoCamera:(CvPhotoCamera*)photoCamera capturedImage:(UIImage *)image;
 - (void)photoCameraCancel:(CvPhotoCamera*)photoCamera;
 
 @end
 
-@interface CvPhotoCamera : CvAbstractCamera
+CV_EXPORTS @interface CvPhotoCamera : CvAbstractCamera
 {
     AVCaptureStillImageOutput *stillImageOutput;
 }
 
-@property (nonatomic, assign) id<CvPhotoCameraDelegate> delegate;
+@property (nonatomic, weak) id<CvPhotoCameraDelegate> delegate;
 
-- (void)takePicture;
+- CV_UNUSED(takePicture);
 
 @end
 

@@ -51,6 +51,13 @@ namespace {
 
 #ifdef CAROTENE_NEON
 
+inline float32x4_t vroundq(const float32x4_t& v)
+{
+    const int32x4_t signMask = vdupq_n_s32(1 << 31), half = vreinterpretq_s32_f32(vdupq_n_f32(0.5f));
+    float32x4_t v_addition = vreinterpretq_f32_s32(vorrq_s32(half, vandq_s32(signMask, vreinterpretq_s32_f32(v))));
+    return vaddq_f32(v, v_addition);
+}
+
 template <typename T>
 inline T divSaturateQ(const T &v1, const T &v2, const float scale)
 {
@@ -62,10 +69,17 @@ inline T divSaturateQ(const T &v1, const T &v2, const float scale)
 }
 template <>
 inline int32x4_t divSaturateQ<int32x4_t>(const int32x4_t &v1, const int32x4_t &v2, const float scale)
-{ return vcvtq_s32_f32(vmulq_f32(vmulq_n_f32(vcvtq_f32_s32(v1), scale), internal::vrecpq_f32(vcvtq_f32_s32(v2)))); }
+{ return vcvtq_s32_f32(vroundq(vmulq_f32(vmulq_n_f32(vcvtq_f32_s32(v1), scale), internal::vrecpq_f32(vcvtq_f32_s32(v2))))); }
 template <>
 inline uint32x4_t divSaturateQ<uint32x4_t>(const uint32x4_t &v1, const uint32x4_t &v2, const float scale)
-{ return vcvtq_u32_f32(vmulq_f32(vmulq_n_f32(vcvtq_f32_u32(v1), scale), internal::vrecpq_f32(vcvtq_f32_u32(v2)))); }
+{ return vcvtq_u32_f32(vroundq(vmulq_f32(vmulq_n_f32(vcvtq_f32_u32(v1), scale), internal::vrecpq_f32(vcvtq_f32_u32(v2))))); }
+
+inline float32x2_t vround(const float32x2_t& v)
+{
+    const int32x2_t signMask = vdup_n_s32(1 << 31), half = vreinterpret_s32_f32(vdup_n_f32(0.5f));
+    float32x2_t v_addition = vreinterpret_f32_s32(vorr_s32(half, vand_s32(signMask, vreinterpret_s32_f32(v))));
+    return vadd_f32(v, v_addition);
+}
 
 template <typename T>
 inline T divSaturate(const T &v1, const T &v2, const float scale)
@@ -74,10 +88,10 @@ inline T divSaturate(const T &v1, const T &v2, const float scale)
 }
 template <>
 inline int32x2_t divSaturate<int32x2_t>(const int32x2_t &v1, const int32x2_t &v2, const float scale)
-{ return vcvt_s32_f32(vmul_f32(vmul_n_f32(vcvt_f32_s32(v1), scale), internal::vrecp_f32(vcvt_f32_s32(v2)))); }
+{ return vcvt_s32_f32(vround(vmul_f32(vmul_n_f32(vcvt_f32_s32(v1), scale), internal::vrecp_f32(vcvt_f32_s32(v2))))); }
 template <>
 inline uint32x2_t divSaturate<uint32x2_t>(const uint32x2_t &v1, const uint32x2_t &v2, const float scale)
-{ return vcvt_u32_f32(vmul_f32(vmul_n_f32(vcvt_f32_u32(v1), scale), internal::vrecp_f32(vcvt_f32_u32(v2)))); }
+{ return vcvt_u32_f32(vround(vmul_f32(vmul_n_f32(vcvt_f32_u32(v1), scale), internal::vrecp_f32(vcvt_f32_u32(v2))))); }
 
 
 template <typename T>
@@ -136,6 +150,10 @@ void div(const Size2D &size,
 #ifdef CAROTENE_NEON
     typedef typename internal::VecTraits<T>::vec128 vec128;
     typedef typename internal::VecTraits<T>::vec64 vec64;
+
+#if defined(__GNUC__) && (defined(__GXX_EXPERIMENTAL_CXX0X__) || __cplusplus >= 201103L)
+    static_assert(std::numeric_limits<T>::is_integer, "template implementation is for integer types only");
+#endif
 
     if (scale == 0.0f ||
         (std::numeric_limits<T>::is_integer &&
@@ -297,6 +315,10 @@ void recip(const Size2D &size,
     typedef typename internal::VecTraits<T>::vec128 vec128;
     typedef typename internal::VecTraits<T>::vec64 vec64;
 
+#if defined(__GNUC__) && (defined(__GXX_EXPERIMENTAL_CXX0X__) || __cplusplus >= 201103L)
+    static_assert(std::numeric_limits<T>::is_integer, "template implementation is for integer types only");
+#endif
+
     if (scale == 0.0f ||
         (std::numeric_limits<T>::is_integer &&
          scale <  1.0f &&
@@ -449,8 +471,6 @@ void div(const Size2D &size,
         return;
     }
 
-    float32x4_t v_zero = vdupq_n_f32(0.0f);
-
     size_t roiw128 = size.width >= 3 ? size.width - 3 : 0;
     size_t roiw64 = size.width >= 1 ? size.width - 1 : 0;
 
@@ -471,9 +491,7 @@ void div(const Size2D &size,
                 float32x4_t v_src0 = vld1q_f32(src0 + j);
                 float32x4_t v_src1 = vld1q_f32(src1 + j);
 
-                uint32x4_t v_mask = vceqq_f32(v_src1,v_zero);
-                vst1q_f32(dst + j, vreinterpretq_f32_u32(vbicq_u32(
-                                   vreinterpretq_u32_f32(vmulq_f32(v_src0, internal::vrecpq_f32(v_src1))), v_mask)));
+                vst1q_f32(dst + j, vmulq_f32(v_src0, internal::vrecpq_f32(v_src1)));
             }
 
             for (; j < roiw64; j += 2)
@@ -481,14 +499,12 @@ void div(const Size2D &size,
                 float32x2_t v_src0 = vld1_f32(src0 + j);
                 float32x2_t v_src1 = vld1_f32(src1 + j);
 
-                uint32x2_t v_mask = vceq_f32(v_src1,vget_low_f32(v_zero));
-                vst1_f32(dst + j, vreinterpret_f32_u32(vbic_u32(
-                                  vreinterpret_u32_f32(vmul_f32(v_src0, internal::vrecp_f32(v_src1))), v_mask)));
+                vst1_f32(dst + j, vmul_f32(v_src0, internal::vrecp_f32(v_src1)));
             }
 
             for (; j < size.width; j++)
             {
-                dst[j] = src1[j] ? src0[j] / src1[j] : 0.0f;
+                dst[j] = src0[j] / src1[j];
             }
         }
     }
@@ -509,10 +525,8 @@ void div(const Size2D &size,
                 float32x4_t v_src0 = vld1q_f32(src0 + j);
                 float32x4_t v_src1 = vld1q_f32(src1 + j);
 
-                uint32x4_t v_mask = vceqq_f32(v_src1,v_zero);
-                vst1q_f32(dst + j, vreinterpretq_f32_u32(vbicq_u32(
-                                   vreinterpretq_u32_f32(vmulq_f32(vmulq_n_f32(v_src0, scale),
-                                                         internal::vrecpq_f32(v_src1))), v_mask)));
+                vst1q_f32(dst + j, vmulq_f32(vmulq_n_f32(v_src0, scale),
+                                             internal::vrecpq_f32(v_src1)));
             }
 
             for (; j < roiw64; j += 2)
@@ -520,15 +534,13 @@ void div(const Size2D &size,
                 float32x2_t v_src0 = vld1_f32(src0 + j);
                 float32x2_t v_src1 = vld1_f32(src1 + j);
 
-                uint32x2_t v_mask = vceq_f32(v_src1,vget_low_f32(v_zero));
-                vst1_f32(dst + j, vreinterpret_f32_u32(vbic_u32(
-                                  vreinterpret_u32_f32(vmul_f32(vmul_n_f32(v_src0, scale),
-                                                                internal::vrecp_f32(v_src1))), v_mask)));
+                vst1_f32(dst + j, vmul_f32(vmul_n_f32(v_src0, scale),
+                                           internal::vrecp_f32(v_src1)));
             }
 
             for (; j < size.width; j++)
             {
-                dst[j] = src1[j] ? src0[j] * scale / src1[j] : 0.0f;
+                dst[j] = src0[j] * scale / src1[j];
             }
         }
     }
@@ -606,8 +618,6 @@ void reciprocal(const Size2D &size,
         return;
     }
 
-    float32x4_t v_zero = vdupq_n_f32(0.0f);
-
     size_t roiw128 = size.width >= 3 ? size.width - 3 : 0;
     size_t roiw64 = size.width >= 1 ? size.width - 1 : 0;
 
@@ -625,23 +635,19 @@ void reciprocal(const Size2D &size,
 
                 float32x4_t v_src1 = vld1q_f32(src1 + j);
 
-                uint32x4_t v_mask = vceqq_f32(v_src1,v_zero);
-                vst1q_f32(dst + j, vreinterpretq_f32_u32(vbicq_u32(
-                                   vreinterpretq_u32_f32(internal::vrecpq_f32(v_src1)), v_mask)));
+                vst1q_f32(dst + j, internal::vrecpq_f32(v_src1));
             }
 
             for (; j < roiw64; j += 2)
             {
                 float32x2_t v_src1 = vld1_f32(src1 + j);
 
-                uint32x2_t v_mask = vceq_f32(v_src1,vget_low_f32(v_zero));
-                vst1_f32(dst + j, vreinterpret_f32_u32(vbic_u32(
-                                  vreinterpret_u32_f32(internal::vrecp_f32(v_src1)), v_mask)));
+                vst1_f32(dst + j, internal::vrecp_f32(v_src1));
             }
 
             for (; j < size.width; j++)
             {
-                dst[j] = src1[j] ? 1.0f / src1[j] : 0;
+                dst[j] = 1.0f / src1[j];
             }
         }
     }
@@ -659,25 +665,19 @@ void reciprocal(const Size2D &size,
 
                 float32x4_t v_src1 = vld1q_f32(src1 + j);
 
-                uint32x4_t v_mask = vceqq_f32(v_src1,v_zero);
-                vst1q_f32(dst + j, vreinterpretq_f32_u32(vbicq_u32(
-                                   vreinterpretq_u32_f32(vmulq_n_f32(internal::vrecpq_f32(v_src1),
-                                                                     scale)),v_mask)));
+                vst1q_f32(dst + j, vmulq_n_f32(internal::vrecpq_f32(v_src1), scale));
             }
 
             for (; j < roiw64; j += 2)
             {
                 float32x2_t v_src1 = vld1_f32(src1 + j);
 
-                uint32x2_t v_mask = vceq_f32(v_src1,vget_low_f32(v_zero));
-                vst1_f32(dst + j, vreinterpret_f32_u32(vbic_u32(
-                                  vreinterpret_u32_f32(vmul_n_f32(internal::vrecp_f32(v_src1),
-                                                                  scale)), v_mask)));
+                vst1_f32(dst + j, vmul_n_f32(internal::vrecp_f32(v_src1), scale));
             }
 
             for (; j < size.width; j++)
             {
-                dst[j] = src1[j] ? scale / src1[j] : 0;
+                dst[j] = scale / src1[j];
             }
         }
     }
